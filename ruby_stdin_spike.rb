@@ -5,8 +5,14 @@ require 'open3'
 # cmd = 'cat -u -n' # -u disables output buffering, -n numbers output lines (to distinguish from input)
 # input_lines = ['line1', 'line2', 'line3', "\C-d"] # TODO: how to send Ctrl-D to exit without timeout?
 
-cmd = 'irb -f --prompt=default'
-input_lines = ['puts "hi"', 'puts "aaa\nbbb\nccc"', 'puts "bye"', 'exit']
+# cmd = %q(ruby -e 'STDOUT.sync; STDERR.sync; while line = STDIN.readline; exit 0 if line =~ /exit/; STDERR.puts("err:#{line}"); STDOUT.puts("out:#{line}"); end')
+# input_lines = ['line1', 'line2', 'line3', 'exit']
+
+# cmd = 'irb -f --prompt=default'
+# input_lines = ['STDOUT.puts "hi"', 'STDERR.puts "aaa\nbbb\nccc"', 'STDOUT.puts "bye"', 'exit']
+
+cmd = %q(ruby -e 'STDOUT.sync; STDERR.sync; STDOUT.puts("out"); STDERR.puts("err");STDOUT.puts("out2"); STDERR.puts("err2")')
+input_lines = []
 
 # cmd = 'nslookup localhost'
 # input_lines = []
@@ -41,6 +47,7 @@ n = 0
 Open3.popen2e(cmd) do |stdin, stdout_and_stderr, wait_thr|
   output = ''
   line = nil
+  stdout_and_stderr.sync
   begin
     n += 1
     # puts "about to gets from output for #{n} time"
@@ -69,7 +76,7 @@ Open3.popen2e(cmd) do |stdin, stdout_and_stderr, wait_thr|
     else
       puts_input_line_to_stdin(stdin, input_lines)
       # puts "about to io.select with input pending, stdout_and_stderr = #{stdout_and_stderr.inspect}"
-      result = IO.select([stdout_and_stderr], nil, nil)
+      result = IO.select([stdout_and_stderr], nil, nil, output_timeout)
       retry
     end
   end
