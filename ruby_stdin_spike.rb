@@ -5,20 +5,20 @@ require 'open3'
 cmd0 = 'cat -u -n' # -u disables output buffering, -n numbers output lines (to distinguish from input)
 input_lines0 = ['line1', 'line2', 'line3', "\C-d"] # TODO: how to send Ctrl-D to exit without timeout?
 
-cmd1 = %q(ruby -e 'STDOUT.sync; STDERR.sync; while line = STDIN.readline; exit 0 if line =~ /exit/; STDERR.puts("err:#{line}"); STDOUT.puts("out:#{line}"); end')
+cmd1 = %q(ruby -e 'while line = $stdin.readline; exit 0 if line =~ /exit/; $stdout.puts("out:#{line}"); $stdout.flush; sleep 1; $stderr.puts("err:#{line}"); $stderr.flush; end')
 input_lines1 = ['line1', 'line2', 'line3', 'exit']
 
 cmd2 = 'irb -f --prompt=default'
-input_lines2 = ['STDOUT.puts "hi"', 'STDERR.puts "aaa\nbbb\nccc"', 'STDOUT.puts "bye"', 'exit']
+input_lines2 = ['$stdout.puts "hi"', '$stderr.puts "aaa\nbbb\nccc"', '$stdout.puts "bye"', 'exit']
 
-cmd3 = %q(ruby -e 'STDOUT.sync; STDERR.sync; STDOUT.puts("out"); STDERR.puts("err");STDOUT.puts("out2"); STDERR.puts("err2")')
+cmd3 = %q(ruby -e '$stdout.puts("out"); $stdout.flush; $stderr.puts("err"); $stderr.flush; $stdout.puts("out2"); $stdout.flush; $stderr.puts("err2"); $stderr.flush;')
 input_lines3 = []
 
 cmd4 = %q(echo out > /dev/stdout && echo err > /dev/stderr && echo out2 > /dev/stdout && echo err2 > /dev/stderr)
 input_lines4 = []
 
-cmd = cmd3
-input_lines = input_lines3
+cmd = cmd0
+input_lines = input_lines0
 
 # cmd = 'nslookup localhost'
 # input_lines = []
@@ -58,7 +58,7 @@ Open3.popen2e(cmd) do |stdin, stdout_and_stderr, wait_thr|
     n += 1
     # puts "about to gets from output for #{n} time"
     while line = readline_nonblock(stdout_and_stderr)
-      # puts "in begin loop, line is '#{line}'"
+      puts "in begin loop, line is '#{line}'"
       output += line
       # puts "Appended line '#{line}' to output"
       line = nil
